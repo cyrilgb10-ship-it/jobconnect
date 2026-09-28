@@ -1,0 +1,167 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  CANDIDATE
+  ADMIN
+}
+
+enum SubscriptionPlan {
+  BASIC
+  PREMIUM
+}
+
+enum SubscriptionStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum JobStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+enum ApplicationStatus {
+  PENDING
+  REVIEWING
+  ACCEPTED
+  REJECTED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  phone     String?
+  city      String?
+  photo     String?
+  role      UserRole @default(CANDIDATE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profile       CandidateProfile?
+  subscriptions Subscription[]
+  applications  Application[]
+  favorites     Favorite[]
+}
+
+model CandidateProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  bio          String?
+  cvUrl        String?
+  skills       String?
+  experience   String?
+  education    String?
+  availability String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Category {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  jobs Job[]
+}
+
+model Job {
+  id              String  @id @default(cuid())
+  title           String
+  description     String
+  companyName     String
+  companyLogo     String?
+  location        String?
+  contractType    String?
+  salary          String?
+  experience      String?
+  education       String?
+  skills          String?
+  applicationInfo String?
+
+  status JobStatus @default(DRAFT)
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  publishedAt DateTime?
+  expiresAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  applications Application[]
+  favorites    Favorite[]
+}
+
+model Application {
+  id     String @id @default(cuid())
+  userId String
+  jobId  String
+
+  status       ApplicationStatus @default(PENDING)
+  message      String?
+  whatsappSent Boolean           @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job  Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jobId])
+}
+
+model Favorite {
+  id     String @id @default(cuid())
+  userId String
+  jobId  String
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job  Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jobId])
+}
+
+model Subscription {
+  id     String             @id @default(cuid())
+  userId String
+  plan   SubscriptionPlan
+  status SubscriptionStatus @default(PENDING)
+
+  price             Int
+  applicationsLimit Int?
+  applicationsUsed  Int  @default(0)
+
+  startDate DateTime?
+  endDate   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+}
