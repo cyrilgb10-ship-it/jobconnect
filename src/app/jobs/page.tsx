@@ -76,7 +76,7 @@ export default async function JobsPage() {
           </p>
 
           <h1 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">
-            Offres d'emploi
+            Offres d'emplois
           </h1>
 
           <p className="mt-4 max-w-2xl text-sm leading-7 text-zinc-500 sm:text-base">
