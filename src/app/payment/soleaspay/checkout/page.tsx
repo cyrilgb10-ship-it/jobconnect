@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 
+const BASE_URL = "https://jobconnect-azure.vercel.app";
+
 export default async function SoleasPayCheckoutPage({
   searchParams,
 }: {
@@ -84,10 +86,6 @@ export default async function SoleasPayCheckoutPage({
     );
   }
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    "http://localhost:3000";
-
   const description =
     payment.subscription.plan === "BASIC"
       ? "Abonnement BASIC JobConnect"
@@ -170,13 +168,13 @@ export default async function SoleasPayCheckoutPage({
           <input
             type="hidden"
             name="successUrl"
-            value={`${baseUrl}/payment/success`}
+            value={`${BASE_URL}/payment/success`}
           />
 
           <input
             type="hidden"
             name="failureUrl"
-            value={`${baseUrl}/payment/failed`}
+            value={`${BASE_URL}/payment/failed`}
           />
 
           <button
