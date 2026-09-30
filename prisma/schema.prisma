@@ -24,6 +24,14 @@ enum SubscriptionStatus {
   CANCELLED
 }
 
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
 enum JobStatus {
   DRAFT
   PUBLISHED
@@ -55,6 +63,7 @@ model User {
   subscriptions Subscription[]
   applications  Application[]
   favorites     Favorite[]
+  payments      Payment[]
 }
 
 model CandidateProfile {
@@ -161,7 +170,34 @@ model Subscription {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments Payment[]
 
   @@index([userId, status])
+}
+
+model Payment {
+  id String @id @default(cuid())
+
+  userId         String
+  subscriptionId String
+
+  orderId             String  @unique
+  transactionReference String? @unique
+  invoiceReference    String?
+  providerReference   String?
+
+  amount   Int
+  currency String @default("XOF")
+  status   PaymentStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([subscriptionId, status])
+  @@index([transactionReference])
 }

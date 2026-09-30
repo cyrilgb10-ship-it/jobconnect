@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
-import SubscribeWhatsAppButton from "@/components/subscriptions/SubscribeWhatsAppButton";
+import SoleasPayButton from "@/components/subscriptions/SoleasPayButton";
 
 export default async function SubscriptionsPage() {
   const user = await getCurrentUser();
@@ -47,8 +47,8 @@ export default async function SubscriptionsPage() {
           </h1>
 
           <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-zinc-400">
-            Activez votre abonnement pour pouvoir envoyer vos
-            candidatures aux offres disponibles sur JobConnect.
+            Activez votre abonnement pour envoyer vos candidatures
+            aux offres disponibles sur JobConnect.
           </p>
         </div>
 
@@ -60,9 +60,7 @@ export default async function SubscriptionsPage() {
             </p>
 
             <div className="mt-4 flex items-end gap-2">
-              <span className="text-4xl font-black">
-                1 500
-              </span>
+              <span className="text-4xl font-black">999</span>
 
               <span className="pb-1 text-sm text-zinc-500">
                 FCFA / mois
@@ -89,17 +87,12 @@ export default async function SubscriptionsPage() {
 
               <li className="flex gap-3">
                 <span className="text-[#ea580c]">✓</span>
-                <span>Candidature via WhatsApp</span>
+                <span>Candidatures envoyées via WhatsApp</span>
               </li>
             </ul>
 
             {user ? (
-              <SubscribeWhatsAppButton
-                plan="BASIC"
-                firstName={user.firstName}
-                lastName={user.lastName}
-                email={user.email}
-              />
+              <SoleasPayButton plan="BASIC" />
             ) : (
               <Link
                 href="/login"
@@ -121,9 +114,7 @@ export default async function SubscriptionsPage() {
             </p>
 
             <div className="mt-4 flex items-end gap-2">
-              <span className="text-4xl font-black">
-                3 000
-              </span>
+              <span className="text-4xl font-black">2 997</span>
 
               <span className="pb-1 text-sm text-zinc-500">
                 FCFA / mois
@@ -150,17 +141,12 @@ export default async function SubscriptionsPage() {
 
               <li className="flex gap-3">
                 <span className="text-[#ea580c]">✓</span>
-                <span>Candidature via WhatsApp</span>
+                <span>Candidatures envoyées via WhatsApp</span>
               </li>
             </ul>
 
             {user ? (
-              <SubscribeWhatsAppButton
-                plan="PREMIUM"
-                firstName={user.firstName}
-                lastName={user.lastName}
-                email={user.email}
-              />
+              <SoleasPayButton plan="PREMIUM" />
             ) : (
               <Link
                 href="/login"
@@ -174,9 +160,9 @@ export default async function SubscriptionsPage() {
 
         <div className="mx-auto mt-10 max-w-3xl rounded-2xl border border-white/10 bg-[#111111] px-6 py-5 text-center">
           <p className="text-sm leading-6 text-zinc-400">
-            Après votre demande via WhatsApp, votre paiement est
-            vérifié manuellement. Votre abonnement sera ensuite
-            activé par l'administration de JobConnect.
+            Le paiement est effectué de manière sécurisée avec
+            SoleasPay. Après confirmation du paiement, votre
+            abonnement est automatiquement activé.
           </p>
         </div>
 
@@ -185,7 +171,7 @@ export default async function SubscriptionsPage() {
             href="/jobs"
             className="text-sm font-semibold text-zinc-500 transition hover:text-white"
           >
-            ← Retour aux offres d'emploi
+            ← Voir les offres d'emploi
           </Link>
         </div>
       </section>

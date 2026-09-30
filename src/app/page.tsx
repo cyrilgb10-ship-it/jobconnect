@@ -60,7 +60,9 @@ export default function Home() {
           <h1 className="mt-7 text-5xl font-black leading-[1.05] tracking-tight sm:text-6xl lg:text-7xl">
             Trouvez votre prochaine
             <br />
-            <span className="text-[#f97316]">opportunité professionnelle.</span>
+            <span className="text-[#f97316]">
+              opportunité professionnelle.
+            </span>
           </h1>
 
           <p className="mx-auto mt-7 max-w-2xl text-base leading-8 text-zinc-400 sm:text-lg">
@@ -168,7 +170,7 @@ export default function Home() {
             <Step
               number="03"
               title="Activez un abonnement"
-              text="Choisissez BASIC ou PREMIUM et contactez-nous via WhatsApp pour effectuer le paiement."
+              text="Choisissez BASIC ou PREMIUM et effectuez votre paiement sécurisé avec SoleasPay."
             />
 
             <Step
@@ -181,7 +183,10 @@ export default function Home() {
       </section>
 
       {/* FONCTIONNALITÉS */}
-      <section id="avantages" className="border-y border-white/10 bg-[#0d0d0d]">
+      <section
+        id="avantages"
+        className="border-y border-white/10 bg-[#0d0d0d]"
+      >
         <div className="mx-auto max-w-6xl px-5 py-24">
           <div className="text-center">
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-[#f97316]">
@@ -259,7 +264,8 @@ export default function Home() {
               </p>
 
               <div className="mt-4">
-                <span className="text-5xl font-black">1 500</span>
+                <span className="text-5xl font-black">999</span>
+
                 <span className="ml-2 text-sm text-zinc-500">
                   FCFA / mois
                 </span>
@@ -301,7 +307,8 @@ export default function Home() {
               </div>
 
               <div className="mt-4">
-                <span className="text-5xl font-black">3 000</span>
+                <span className="text-5xl font-black">2 997</span>
+
                 <span className="ml-2 text-sm text-zinc-500">
                   FCFA / mois
                 </span>
@@ -338,10 +345,10 @@ export default function Home() {
             </p>
 
             <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-zinc-500">
-              Après avoir choisi votre formule, contactez JobConnect via
-              WhatsApp. Après vérification de votre paiement, votre abonnement
-              est activé par l'administration et vous pouvez commencer à
-              postuler.
+              Après avoir choisi votre formule, vous êtes redirigé vers
+              SoleasPay pour effectuer votre paiement sécurisé. Une fois le
+              paiement confirmé, votre abonnement est automatiquement activé
+              et vous pouvez commencer à postuler.
             </p>
           </div>
         </div>
@@ -369,7 +376,7 @@ export default function Home() {
             href="/register"
             className="mt-8 inline-flex rounded-xl bg-[#ea580c] px-7 py-4 text-sm font-black hover:bg-[#f97316]"
           >
-            Créer mon compte
+            Créer un compte
           </Link>
         </div>
       </section>
