@@ -9,10 +9,8 @@ type Payment = {
   amount: number;
   currency: string;
   status: string;
-  subscription: {
-    plan: "BASIC" | "PREMIUM";
-    applicationsLimit: number | null;
-  };
+  plan: "BASIC" | "PREMIUM";
+  subscriptionStatus: string;
 };
 
 type Network = "moov_tg" | "togocel";
@@ -54,6 +52,7 @@ function SasPayCheckout() {
         if (!response.ok || !data.success) {
           throw new Error(
             data.message ||
+              data.error ||
               "Impossible de récupérer les informations du paiement.",
           );
         }
@@ -106,6 +105,7 @@ function SasPayCheckout() {
       if (!response.ok || !data.success) {
         throw new Error(
           data.message ||
+            data.error ||
             "Impossible de démarrer le paiement.",
         );
       }
@@ -186,7 +186,7 @@ function SasPayCheckout() {
               </span>
 
               <span className="font-bold text-orange-400">
-                {payment.subscription.plan}
+                {payment.plan}
               </span>
             </div>
 
