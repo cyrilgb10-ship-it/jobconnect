@@ -393,6 +393,19 @@ export async function POST(request: NextRequest) {
     const responseText =
       await sasPayResponse.text();
 
+    console.log("========== SASPAY DEBUG ==========");
+    console.log("HTTP STATUS:", sasPayResponse.status);
+    console.log("HTTP OK:", sasPayResponse.ok);
+    console.log(
+      "RESPONSE HEADERS:",
+      Object.fromEntries(sasPayResponse.headers.entries())
+   );
+    console.log("RESPONSE BODY:", responseText);
+    console.log("NETWORK:", network);
+    console.log("PHONE:", normalizedPhone);
+    console.log("AMOUNT:", payment.amount);
+    console.log("==================================");
+
     let data: any = {};
 
     try {
