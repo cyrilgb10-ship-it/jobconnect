@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
-import SoleasPayButton from "@/components/subscriptions/SoleasPayButton";
+import SasPayButton from "@/components/subscriptions/SasPayButton";
 
 export default async function SubscriptionsPage() {
   const user = await getCurrentUser();
@@ -92,7 +92,7 @@ export default async function SubscriptionsPage() {
             </ul>
 
             {user ? (
-              <SoleasPayButton plan="BASIC" />
+              <SasPayButton plan="BASIC" />
             ) : (
               <Link
                 href="/login"
@@ -146,7 +146,7 @@ export default async function SubscriptionsPage() {
             </ul>
 
             {user ? (
-              <SoleasPayButton plan="PREMIUM" />
+              <SasPayButton plan="PREMIUM" />
             ) : (
               <Link
                 href="/login"
@@ -161,7 +161,7 @@ export default async function SubscriptionsPage() {
         <div className="mx-auto mt-10 max-w-3xl rounded-2xl border border-white/10 bg-[#111111] px-6 py-5 text-center">
           <p className="text-sm leading-6 text-zinc-400">
             Le paiement est effectué de manière sécurisée avec
-            SoleasPay. Après confirmation du paiement, votre
+            SasPay. Après confirmation du paiement, votre
             abonnement est automatiquement activé.
           </p>
         </div>

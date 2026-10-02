@@ -23,24 +23,21 @@ export async function POST() {
       );
     }
 
-    return NextResponse.json(
-      {
-        error:
-          "Utilisez le paiement SoleasPay pour souscrire à un abonnement.",
-        paymentEndpoint: "/api/payment/soleaspay",
-        plans: {
-          BASIC: {
-            price: 999,
-            applicationsLimit: 3,
-          },
-          PREMIUM: {
-            price: 2997,
-            applicationsLimit: null,
-          },
+    return NextResponse.json({
+      success: true,
+      paymentProvider: "SasPay",
+      paymentEndpoint: "/api/payment/saspay",
+      plans: {
+        BASIC: {
+          price: 999,
+          applicationsLimit: 3,
+        },
+        PREMIUM: {
+          price: 2997,
+          applicationsLimit: null,
         },
       },
-      { status: 410 },
-    );
+    });
   } catch (error) {
     console.error("Erreur POST /api/subscriptions:", error);
 
