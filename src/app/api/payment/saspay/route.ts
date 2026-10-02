@@ -33,21 +33,16 @@ function isValidPlan(value: unknown): value is Plan {
 }
 
 function isValidNetwork(value: unknown): value is Network {
-  return (
-    value === "moov_tg" ||
-    value === "togocel"
-  );
+  return value === "moov_tg" || value === "togocel";
 }
 
 function normalizeTogoPhone(value: string) {
   const digits = value.replace(/\D/g, "");
 
-  // Format local : 90 80 12 28
   if (digits.length === 8) {
     return `+228${digits}`;
   }
 
-  // Format international : 228 90 80 12 28
   if (digits.length === 11 && digits.startsWith("228")) {
     return `+${digits}`;
   }
@@ -76,8 +71,7 @@ async function getAuthenticatedCandidate() {
 /**
  * GET
  *
- * Permet à la page de paiement de récupérer
- * les informations du paiement.
+ * Récupère les informations d'un paiement.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -130,7 +124,10 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("Erreur GET /api/payment/saspay:", error);
+    console.error(
+      "Erreur GET /api/payment/saspay:",
+      error,
+    );
 
     return NextResponse.json(
       {
@@ -148,13 +145,15 @@ export async function GET(request: NextRequest) {
 /**
  * POST
  *
- * Deux possibilités :
+ * Étape 1 :
+ * { plan }
  *
- * 1. { plan }
- *    → crée le paiement local et ouvre la page de paiement.
+ * Crée le paiement local.
  *
- * 2. { paymentId, network, phone }
- *    → lance réellement le paiement SasPay.
+ * Étape 2 :
+ * { paymentId, network, phone }
+ *
+ * Lance le paiement SasPay.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -197,11 +196,6 @@ export async function POST(request: NextRequest) {
 
       const selectedPlan = PLANS[plan];
 
-      /**
-       * On cherche un abonnement PENDING
-       * existant pour éviter de créer plusieurs
-       * paiements identiques.
-       */
       const existingSubscription =
         await prisma.subscription.findFirst({
           where: {
@@ -233,7 +227,8 @@ export async function POST(request: NextRequest) {
         existingSubscription.payments.length > 0
       ) {
         subscriptionId = existingSubscription.id;
-        paymentId = existingSubscription.payments[0].id;
+        paymentId =
+          existingSubscription.payments[0].id;
       } else {
         const result = await prisma.$transaction(
           async (tx) => {
@@ -285,8 +280,8 @@ export async function POST(request: NextRequest) {
     /**
      * ÉTAPE 2
      *
-     * L'utilisateur a choisi son opérateur
-     * et renseigné son numéro.
+     * L'utilisateur lance réellement
+     * le paiement Mobile Money.
      */
     const paymentId = String(body.paymentId);
     const network = body.network;
@@ -310,23 +305,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          message: "Veuillez saisir votre numéro de téléphone.",
+          message:
+            "Veuillez saisir votre numéro de téléphone.",
         },
         { status: 400 },
       );
     }
 
-    const normalizedPhone = normalizeTogoPhone(phone);
+    const normalizedPhone =
+      normalizeTogoPhone(phone);
 
-    const payment = await prisma.payment.findFirst({
-      where: {
-        id: paymentId,
-        userId: user.id,
-      },
-      include: {
-        subscription: true,
-      },
-    });
+    const payment =
+      await prisma.payment.findFirst({
+        where: {
+          id: paymentId,
+          userId: user.id,
+        },
+        include: {
+          subscription: true,
+        },
+      });
 
     if (!payment) {
       return NextResponse.json(
@@ -344,6 +342,8 @@ export async function POST(request: NextRequest) {
         alreadyProcessed: true,
         status: payment.status,
         paymentId: payment.id,
+        providerReference:
+          payment.providerReference,
       });
     }
 
@@ -356,11 +356,15 @@ export async function POST(request: NextRequest) {
         success: true,
         alreadyStarted: true,
         paymentId: payment.id,
-        providerReference: payment.providerReference,
+        providerReference:
+          payment.providerReference,
         status: payment.status,
       });
     }
 
+    /**
+     * Appel SasPay Softpay.
+     */
     const sasPayResponse = await fetch(
       `${SASPAY_API_URL.replace(/\/$/, "")}/payments/softpay/`,
       {
@@ -386,7 +390,8 @@ export async function POST(request: NextRequest) {
       },
     );
 
-    const responseText = await sasPayResponse.text();
+    const responseText =
+      await sasPayResponse.text();
 
     let data: any = {};
 
@@ -399,6 +404,11 @@ export async function POST(request: NextRequest) {
         message: responseText,
       };
     }
+
+    console.log(
+      "Réponse complète SasPay:",
+      JSON.stringify(data),
+    );
 
     if (!sasPayResponse.ok) {
       console.error(
@@ -420,38 +430,78 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    /**
+     * SasPay peut retourner l'identifiant
+     * à plusieurs endroits selon la réponse.
+     */
     const providerReference =
-      data?.id ||
-      data?.reference ||
-      data?.transaction_id ||
+      data?.id ??
+      data?.reference ??
+      data?.transaction_id ??
+      data?.payment_id ??
+      data?.data?.id ??
+      data?.data?.reference ??
+      data?.data?.transaction_id ??
+      data?.data?.payment_id ??
       null;
 
+    const transactionReference =
+      data?.reference ??
+      data?.transaction_reference ??
+      data?.data?.reference ??
+      data?.data?.transaction_reference ??
+      null;
+
+    /**
+     * Même si aucun identifiant n'est immédiatement
+     * disponible, le paiement peut déjà avoir été
+     * lancé côté Mobile Money.
+     */
     if (!providerReference) {
-      console.error(
-        "Réponse SasPay sans identifiant:",
+      console.warn(
+        "SasPay a accepté la demande mais aucun identifiant exploitable n'a été retourné:",
         data,
       );
 
       return NextResponse.json(
         {
-          success: false,
+          success: true,
+          paymentId: payment.id,
+          providerReference: null,
+          status:
+            data?.status ||
+            data?.data?.status ||
+            "PENDING",
+          checkoutUrl:
+            data?.checkout_url ||
+            data?.checkoutUrl ||
+            data?.data?.checkout_url ||
+            data?.data?.checkoutUrl ||
+            "",
+          awaitingReference: true,
           message:
-            "SasPay n'a pas retourné de référence de paiement.",
+            "Paiement lancé. Vérifiez votre téléphone et confirmez le paiement.",
         },
-        { status: 502 },
+        { status: 200 },
       );
     }
 
+    /**
+     * Sauvegarde de la référence SasPay.
+     */
     await prisma.payment.update({
       where: {
         id: payment.id,
       },
       data: {
-        providerReference: String(providerReference),
+        providerReference:
+          String(providerReference),
+
         transactionReference:
-          data?.reference
-            ? String(data.reference)
+          transactionReference
+            ? String(transactionReference)
             : undefined,
+
         status: "PENDING",
       },
     });
@@ -459,12 +509,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       paymentId: payment.id,
-      providerReference: String(providerReference),
-      status: data?.status || "PENDING",
+      providerReference:
+        String(providerReference),
+      status:
+        data?.status ||
+        data?.data?.status ||
+        "PENDING",
       checkoutUrl:
         data?.checkout_url ||
         data?.checkoutUrl ||
+        data?.data?.checkout_url ||
+        data?.data?.checkoutUrl ||
         "",
+      message:
+        "Paiement lancé. Vérifiez votre téléphone et confirmez le paiement.",
     });
   } catch (error) {
     console.error(
