@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -148,7 +149,7 @@ export async function GET(request: NextRequest) {
  * Étape 1 :
  * { plan }
  *
- * Crée le paiement local.
+ * Crée un nouveau paiement local.
  *
  * Étape 2 :
  * { paymentId, network, phone }
@@ -177,9 +178,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     /**
-     * ÉTAPE 1
-     *
-     * Création du paiement local.
+     * =========================================================
+     * ÉTAPE 1 — CRÉATION DU PAIEMENT LOCAL
+     * =========================================================
      */
     if (!body.paymentId) {
       const plan = body.plan;
@@ -196,93 +197,66 @@ export async function POST(request: NextRequest) {
 
       const selectedPlan = PLANS[plan];
 
-      const existingSubscription =
-        await prisma.subscription.findFirst({
-          where: {
-            userId: user.id,
-            plan,
-            status: "PENDING",
-          },
-          orderBy: {
-            createdAt: "desc",
-          },
-          include: {
-            payments: {
-              where: {
-                status: "PENDING",
-              },
-              orderBy: {
-                createdAt: "desc",
-              },
-              take: 1,
-            },
-          },
-        });
+      /**
+       * IMPORTANT :
+       *
+       * On ne réutilise plus automatiquement un ancien paiement
+       * PENDING qui possède déjà une providerReference.
+       *
+       * Cela permet à un utilisateur de relancer un paiement
+       * dont la demande Mobile Money précédente n'a pas abouti.
+       */
 
-      let subscriptionId: string;
-      let paymentId: string;
-
-      if (
-        existingSubscription &&
-        existingSubscription.payments.length > 0
-      ) {
-        subscriptionId = existingSubscription.id;
-        paymentId =
-          existingSubscription.payments[0].id;
-      } else {
-        const result = await prisma.$transaction(
-          async (tx) => {
-            const subscription =
-              await tx.subscription.create({
-                data: {
-                  userId: user.id,
-                  plan,
-                  status: "PENDING",
-                  price: selectedPlan.price,
-                  applicationsLimit:
-                    selectedPlan.applicationsLimit,
-                  applicationsUsed: 0,
-                },
-              });
-
-            const payment = await tx.payment.create({
+      const result = await prisma.$transaction(
+        async (tx) => {
+          const subscription =
+            await tx.subscription.create({
               data: {
                 userId: user.id,
-                subscriptionId: subscription.id,
-                orderId: `JC-${crypto.randomUUID()}`,
-                amount: selectedPlan.price,
-                currency: "XOF",
+                plan,
                 status: "PENDING",
+                price: selectedPlan.price,
+                applicationsLimit:
+                  selectedPlan.applicationsLimit,
+                applicationsUsed: 0,
               },
             });
 
-            return {
-              subscription,
-              payment,
-            };
-          },
-        );
+          const payment = await tx.payment.create({
+            data: {
+              userId: user.id,
+              subscriptionId: subscription.id,
+              orderId: `JC-${crypto.randomUUID()}`,
+              amount: selectedPlan.price,
+              currency: "XOF",
+              status: "PENDING",
+            },
+          });
 
-        subscriptionId = result.subscription.id;
-        paymentId = result.payment.id;
-      }
+          return {
+            subscription,
+            payment,
+          };
+        },
+      );
 
       return NextResponse.json({
         success: true,
-        paymentId,
-        subscriptionId,
-        checkoutUrl: `${APP_URL}/payment/saspay/checkout?paymentId=${encodeURIComponent(
-          paymentId,
-        )}`,
+        paymentId: result.payment.id,
+        subscriptionId: result.subscription.id,
+        checkoutUrl:
+          `${APP_URL}/payment/saspay/checkout?paymentId=${encodeURIComponent(
+            result.payment.id,
+          )}`,
       });
     }
 
     /**
-     * ÉTAPE 2
-     *
-     * L'utilisateur lance réellement
-     * le paiement Mobile Money.
+     * =========================================================
+     * ÉTAPE 2 — LANCEMENT DU PAIEMENT MOBILE MONEY
+     * =========================================================
      */
+
     const paymentId = String(body.paymentId);
     const network = body.network;
     const phone = body.phone;
@@ -336,7 +310,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (payment.status !== "PENDING") {
+    /**
+     * Si le paiement est déjà terminé,
+     * on ne crée surtout pas une nouvelle transaction.
+     */
+    if (
+      payment.status === "SUCCESS" ||
+      payment.status === "COMPLETED"
+    ) {
       return NextResponse.json({
         success: true,
         alreadyProcessed: true,
@@ -348,25 +329,45 @@ export async function POST(request: NextRequest) {
     }
 
     /**
-     * Si une transaction SasPay existe déjà,
-     * on ne la recrée pas.
+     * IMPORTANT :
+     *
+     * Nous NE BLOQUONS PLUS ici avec :
+     *
+     * if (payment.providerReference) {
+     *   return ...
+     * }
+     *
+     * Un paiement PENDING peut maintenant être relancé.
      */
-    if (payment.providerReference) {
-      return NextResponse.json({
-        success: true,
-        alreadyStarted: true,
-        paymentId: payment.id,
-        providerReference:
-          payment.providerReference,
-        status: payment.status,
-      });
-    }
+
+    console.log(
+      "========== SASPAY PAYMENT ==========",
+    );
+
+    console.log("Payment ID:", payment.id);
+    console.log("Order ID:", payment.orderId);
+    console.log("Plan:", payment.subscription.plan);
+    console.log("Amount:", payment.amount);
+    console.log("Network:", network);
+    console.log("Phone:", normalizedPhone);
+    console.log(
+      "Previous providerReference:",
+      payment.providerReference,
+    );
 
     /**
-     * Appel SasPay Softpay.
+     * =========================================================
+     * APPEL SASPAY
+     * =========================================================
      */
+
+    const sasPayUrl =
+      `${SASPAY_API_URL.replace(/\/$/, "")}/payments/softpay/`;
+
+    console.log("SasPay URL:", sasPayUrl);
+
     const sasPayResponse = await fetch(
-      `${SASPAY_API_URL.replace(/\/$/, "")}/payments/softpay/`,
+      sasPayUrl,
       {
         method: "POST",
         headers: {
@@ -379,7 +380,8 @@ export async function POST(request: NextRequest) {
           currency: "XOF",
           country: "TG",
           network,
-          description: `Abonnement JobConnect ${payment.subscription.plan}`,
+          description:
+            `Abonnement JobConnect ${payment.subscription.plan}`,
           customer: {
             email: user.email,
             first_name: user.firstName,
@@ -393,18 +395,28 @@ export async function POST(request: NextRequest) {
     const responseText =
       await sasPayResponse.text();
 
-    console.log("========== SASPAY DEBUG ==========");
-    console.log("HTTP STATUS:", sasPayResponse.status);
-    console.log("HTTP OK:", sasPayResponse.ok);
     console.log(
-      "RESPONSE HEADERS:",
-      Object.fromEntries(sasPayResponse.headers.entries())
-   );
-    console.log("RESPONSE BODY:", responseText);
-    console.log("NETWORK:", network);
-    console.log("PHONE:", normalizedPhone);
-    console.log("AMOUNT:", payment.amount);
-    console.log("==================================");
+      "========== SASPAY RESPONSE ==========",
+    );
+
+    console.log(
+      "HTTP STATUS:",
+      sasPayResponse.status,
+    );
+
+    console.log(
+      "HTTP OK:",
+      sasPayResponse.ok,
+    );
+
+    console.log(
+      "RESPONSE BODY:",
+      responseText,
+    );
+
+    console.log(
+      "=====================================",
+    );
 
     let data: any = {};
 
@@ -418,10 +430,11 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    console.log(
-      "Réponse complète SasPay:",
-      JSON.stringify(data),
-    );
+    /**
+     * =========================================================
+     * ERREUR SASPAY
+     * =========================================================
+     */
 
     if (!sasPayResponse.ok) {
       console.error(
@@ -438,15 +451,18 @@ export async function POST(request: NextRequest) {
             data?.detail ||
             data?.error ||
             "SasPay a refusé le paiement.",
+          providerResponse: data,
         },
         { status: 502 },
       );
     }
 
     /**
-     * SasPay peut retourner l'identifiant
-     * à plusieurs endroits selon la réponse.
+     * =========================================================
+     * RÉCUPÉRATION DE LA RÉFÉRENCE
+     * =========================================================
      */
+
     const providerReference =
       data?.id ??
       data?.reference ??
@@ -459,83 +475,74 @@ export async function POST(request: NextRequest) {
       null;
 
     const transactionReference =
-      data?.reference ??
       data?.transaction_reference ??
-      data?.data?.reference ??
       data?.data?.transaction_reference ??
       null;
 
     /**
-     * Même si aucun identifiant n'est immédiatement
-     * disponible, le paiement peut déjà avoir été
-     * lancé côté Mobile Money.
+     * =========================================================
+     * SAUVEGARDE
+     * =========================================================
      */
-    if (!providerReference) {
-      console.warn(
-        "SasPay a accepté la demande mais aucun identifiant exploitable n'a été retourné:",
-        data,
-      );
 
-      return NextResponse.json(
-        {
-          success: true,
-          paymentId: payment.id,
-          providerReference: null,
-          status:
-            data?.status ||
-            data?.data?.status ||
-            "PENDING",
-          checkoutUrl:
-            data?.checkout_url ||
-            data?.checkoutUrl ||
-            data?.data?.checkout_url ||
-            data?.data?.checkoutUrl ||
-            "",
-          awaitingReference: true,
-          message:
-            "Paiement lancé. Vérifiez votre téléphone et confirmez le paiement.",
+    if (providerReference) {
+      await prisma.payment.update({
+        where: {
+          id: payment.id,
         },
-        { status: 200 },
-      );
+        data: {
+          providerReference:
+            String(providerReference),
+
+          transactionReference:
+            transactionReference
+              ? String(transactionReference)
+              : undefined,
+
+          status: "PENDING",
+        },
+      });
     }
 
     /**
-     * Sauvegarde de la référence SasPay.
+     * =========================================================
+     * RÉPONSE AU FRONTEND
+     * =========================================================
      */
-    await prisma.payment.update({
-      where: {
-        id: payment.id,
-      },
-      data: {
-        providerReference:
-          String(providerReference),
-
-        transactionReference:
-          transactionReference
-            ? String(transactionReference)
-            : undefined,
-
-        status: "PENDING",
-      },
-    });
 
     return NextResponse.json({
       success: true,
+
       paymentId: payment.id,
+
       providerReference:
-        String(providerReference),
+        providerReference
+          ? String(providerReference)
+          : null,
+
+      transactionReference:
+        transactionReference
+          ? String(transactionReference)
+          : null,
+
       status:
         data?.status ||
         data?.data?.status ||
         "PENDING",
+
       checkoutUrl:
         data?.checkout_url ||
         data?.checkoutUrl ||
         data?.data?.checkout_url ||
         data?.data?.checkoutUrl ||
         "",
+
       message:
+        data?.message ||
+        data?.data?.message ||
         "Paiement lancé. Vérifiez votre téléphone et confirmez le paiement.",
+
+      providerResponse: data,
     });
   } catch (error) {
     console.error(
