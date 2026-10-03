@@ -30,6 +30,9 @@ export default async function DashboardPage() {
           0
         );
 
+  const whatsappLink =
+    "https://wa.me/22890801228?text=Bonjour%2C%20je%20souhaite%20contacter%20le%20service%20client%20de%20JobConnect.";
+
   return (
     <main className="min-h-screen bg-[#070707] text-white">
       {/* NAVBAR */}
@@ -326,6 +329,30 @@ export default async function DashboardPage() {
                 Consulter les offres
               </Link>
             </div>
+          </section>
+
+          {/* SERVICE CLIENT */}
+          <section className="mt-10">
+            <a
+              href={whatsappLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex w-full items-center justify-center gap-3 rounded-2xl bg-[#25D366] px-6 py-4 text-center text-sm font-black text-white shadow-lg shadow-green-950/20 transition duration-200 hover:bg-[#20bd5a] hover:-translate-y-0.5"
+            >
+              <span className="text-xl">💬</span>
+
+              <span>
+                Contacter le service client
+              </span>
+
+              <span className="transition-transform group-hover:translate-x-1">
+                →
+              </span>
+            </a>
+
+            <p className="mt-3 text-center text-xs text-zinc-600">
+              Une question ? Notre service client est disponible sur WhatsApp.
+            </p>
           </section>
         </div>
       </div>
