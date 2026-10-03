@@ -330,32 +330,27 @@ export default async function DashboardPage() {
               </Link>
             </div>
           </section>
-
-          {/* SERVICE CLIENT */}
-          <section className="mt-10">
-            <a
-              href={whatsappLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex w-full items-center justify-center gap-3 rounded-2xl bg-[#25D366] px-6 py-4 text-center text-sm font-black text-white shadow-lg shadow-green-950/20 transition duration-200 hover:bg-[#20bd5a] hover:-translate-y-0.5"
-            >
-              <span className="text-xl">💬</span>
-
-              <span>
-                Contacter le service client
-              </span>
-
-              <span className="transition-transform group-hover:translate-x-1">
-                →
-              </span>
-            </a>
-
-            <p className="mt-3 text-center text-xs text-zinc-600">
-              Une question ? Notre service client est disponible sur WhatsApp.
-            </p>
-          </section>
         </div>
       </div>
+
+      {/* BOUTON WHATSAPP FLOTTANT */}
+      <a
+        href={whatsappLink}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Contacter le service client sur WhatsApp"
+        className="group fixed bottom-5 right-5 z-50 flex items-center gap-3 rounded-full bg-[#25D366] px-5 py-3.5 text-sm font-black text-white shadow-2xl shadow-black/40 transition-all duration-200 hover:-translate-y-1 hover:bg-[#20bd5a] sm:bottom-6 sm:right-6"
+      >
+        <span className="text-xl">💬</span>
+
+        <span className="hidden sm:inline">
+          Contacter le service client
+        </span>
+
+        <span className="text-base transition-transform group-hover:translate-x-1">
+          →
+        </span>
+      </a>
 
       {/* FOOTER */}
       <footer className="mt-10 border-t border-white/10 bg-[#070707]">
