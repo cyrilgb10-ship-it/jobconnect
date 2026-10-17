@@ -60,7 +60,7 @@ export default async function SubscriptionsPage() {
             </p>
 
             <div className="mt-4 flex items-end gap-2">
-              <span className="text-4xl font-black">999</span>
+              <span className="text-4xl font-black">500</span>
 
               <span className="pb-1 text-sm text-zinc-500">
                 FCFA / mois
@@ -114,7 +114,7 @@ export default async function SubscriptionsPage() {
             </p>
 
             <div className="mt-4 flex items-end gap-2">
-              <span className="text-4xl font-black">2 997</span>
+              <span className="text-4xl font-black">1 299</span>
 
               <span className="pb-1 text-sm text-zinc-500">
                 FCFA / mois
