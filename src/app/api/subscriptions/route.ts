@@ -29,11 +29,11 @@ export async function POST() {
       paymentEndpoint: "/api/payment/saspay",
       plans: {
         BASIC: {
-          price: 999,
+          price: 500,
           applicationsLimit: 3,
         },
         PREMIUM: {
-          price: 2997,
+          price: 1299,
           applicationsLimit: null,
         },
       },
