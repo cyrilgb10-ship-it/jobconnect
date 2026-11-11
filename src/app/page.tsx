@@ -264,7 +264,7 @@ export default function Home() {
               </p>
 
               <div className="mt-4">
-                <span className="text-5xl font-black">999</span>
+                <span className="text-5xl font-black">500</span>
 
                 <span className="ml-2 text-sm text-zinc-500">
                   FCFA / mois
@@ -307,7 +307,7 @@ export default function Home() {
               </div>
 
               <div className="mt-4">
-                <span className="text-5xl font-black">2 997</span>
+                <span className="text-5xl font-black">1 299</span>
 
                 <span className="ml-2 text-sm text-zinc-500">
                   FCFA / mois
