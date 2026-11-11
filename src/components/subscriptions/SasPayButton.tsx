@@ -73,7 +73,7 @@ export default function SasPayButton({ plan }: Props) {
       >
         {loading
           ? "Préparation du paiement..."
-          : `Payer ${plan === "BASIC" ? "999" : "2 997"} FCFA`}
+          : `Payer ${plan === "BASIC" ? "500" : "1 299"} FCFA`}
       </button>
 
       {error ? (
